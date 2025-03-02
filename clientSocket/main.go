@@ -28,10 +28,17 @@ func xorEncodeDecode(text []byte, key *uint64) []byte {
 func sendDataToClient(msg string, key *uint64, conn net.Conn, bufferSize int) {
 	msgEncoded := xorEncodeDecode([]byte(msg), key)
 
+	// Sending message length data
 	lengthBuffer := make([]byte, 4)
 	binary.BigEndian.PutUint32(lengthBuffer, uint32(len(msgEncoded)))
 	conn.Write(lengthBuffer)
-	fmt.Printf("Sending with byte size of %d\n", bufferSize)
+
+	// Sending ChuckSize data
+	lengthChuck := make([]byte, 4)
+	binary.BigEndian.PutUint32(lengthChuck, uint32(bufferSize))
+	conn.Write(lengthChuck)
+
+
 	for i := 0; i < len(msgEncoded); i += bufferSize {
 		end := i + bufferSize
 		if end > len(msgEncoded) {
@@ -40,6 +47,9 @@ func sendDataToClient(msg string, key *uint64, conn net.Conn, bufferSize int) {
 		chunk := msgEncoded[i:end]
 		conn.Write(chunk)
 	}
+
+	returnDataFromServer := make([]byte, len(msgEncoded))
+	conn.Read(returnDataFromServer)
 }
 
 func main() {
@@ -69,15 +79,16 @@ func main() {
 	bufferSizes := []int{8, 64, 256, 512}
 
 	for _, longMessage := range LongMessages {
+		fmt.Println("# Sending Message of : ", cropString(longMessage, 20))
 		for _, value := range bufferSizes {
 			start := time.Now()
 			sendDataToClient(longMessage, &key, conn, value)
 			elapsed := time.Since(start)
-			fmt.Println("Elapsed time:", elapsed)
-			fmt.Println("----")
+			fmt.Println("Elapsed time:", elapsed, "for the bufferSize of", value)
 		}
+		fmt.Println("--------------------------------------")
 	}
-
+	
 	// for {
 	// 	fmt.Print("Enter message: ")
 	// 	if !scanner.Scan() {
@@ -100,4 +111,12 @@ func main() {
 	// 	}
 
 	// }
+}
+
+// Helper Functions
+func cropString(s string, size int) string {
+	if len(s) <= size {
+		return s
+	}
+	return s[:size] + "..."
 }
