@@ -1,6 +1,7 @@
 package main
 
 import (
+	"crypto/sha256"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -8,6 +9,8 @@ import (
 	"os"
 )
 
+
+// Does xorShift to the input key 
 func xorShift(r uint64) uint64 {
 	r ^= r << 13
 	r ^= r >> 7
@@ -95,8 +98,10 @@ func handleClient(conn net.Conn) {
 		fmt.Printf("Received Letter: %s \n", string(decodedBytes[:]))
 
 
-		// Sending encrypted data back to the client
-		conn.Write(fullMessage)
+		// Sending 8-byte acknowledgement back to the client
+		hash := sha256.Sum256(fullMessage)
+		checksum := []byte(hash[:8])
+		conn.Write(checksum)
 
 	}
 }
@@ -139,4 +144,3 @@ func main() {
 		go handleClient(conn)
 	}
 }
-

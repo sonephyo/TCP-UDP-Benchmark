@@ -2,26 +2,23 @@ package main
 
 import (
 	// "bufio"
+	"bytes"
+	"crypto/sha256"
 	"encoding/binary"
 	"fmt"
 	"net"
 	"os"
 	"time"
+	"project1/helper"
 )
-
-func xorShift(r uint64) uint64 {
-	r ^= r << 13
-	r ^= r >> 7
-	r ^= r << 17
-	return r
-}
 
 func xorEncodeDecode(text []byte, key *uint64) []byte {
 	encryptedLi := make([]byte, len(text))
 	for i := 0; i < len(text); i++ {
 		encryptedLi[i] = text[i] ^ byte(*key)
 	}
-	*key = xorShift(*key)
+	
+	*key = helper.XorShift(*key)
 	return encryptedLi
 }
 
@@ -48,8 +45,17 @@ func sendDataToClient(msg string, key *uint64, conn net.Conn, bufferSize int) {
 		conn.Write(chunk)
 	}
 
-	returnDataFromServer := make([]byte, len(msgEncoded))
+
+	// 8-byte acknowledgement
+	returnDataFromServer := make([]byte, 8)
 	conn.Read(returnDataFromServer)
+	hash := sha256.Sum256(msgEncoded)
+	if bytes.Equal(hash[:8], returnDataFromServer) {
+		fmt.Println("Acknowledgment recieved: data are equal")
+	} else {
+		fmt.Println("Warning: data recieved are inequal")
+	}
+
 }
 
 func main() {
