@@ -25,12 +25,38 @@ func sendDataToClient(msg string, key *uint64, conn net.Conn, bufferSize int) {
 	lengthBuffer := make([]byte, 4)
 	binary.BigEndian.PutUint32(lengthBuffer, uint32(len(msgEncoded)))
 	_, err := conn.Write(lengthBuffer)
+	fmt.Println("lengthBuffer: ", lengthBuffer)
 	if err != nil {
-		fmt.Println("asdfasdfasdfasdf")
 		fmt.Println("Error: ", err)
 		return 
 	}
 	fmt.Println("ya recieved")
+
+	// Sending ChuckSize data
+	lengthChuck := make([]byte, 4)
+	fmt.Println("lengthBuffer: ", lengthBuffer)
+
+	binary.BigEndian.PutUint32(lengthChuck, uint32(bufferSize))
+	_, err = conn.Write(lengthChuck)
+	if err != nil {
+		fmt.Println("Error: ", err)
+		return 
+	}
+
+
+	for i := 0; i < len(msgEncoded); i += bufferSize {
+		end := i + bufferSize
+		if end > len(msgEncoded) {
+			end = len(msgEncoded)
+		}
+		chunk := msgEncoded[i:end]
+		conn.Write(chunk)
+		_, err = conn.Write(lengthChuck)
+		if err != nil {
+			fmt.Println("Error: ", err)
+			return 
+		}
+	}
 
 }
 
@@ -71,7 +97,7 @@ func main() {
 
 	defer conn.Close()
 	start := time.Now()
-	sendDataToClient("hasdfasdfasdfasdfasdfi", &key, conn, 8)
+	sendDataToClient("asdfasdfsdf", &key, conn, 8)
 	elapsed := time.Since(start)
 	fmt.Println("Elapsed time:", elapsed, "for the bufferSize of", 8)
 	// bufferSizes := []int{8, 64, 256, 512}
