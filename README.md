@@ -59,6 +59,14 @@ func xorShift(r uint64) uint64 {
 - **Minimize unnecessary traffic** when testing on non-CS networks.
 - **Beware of firewalls** that may block UDP packets.
 
+129.3.20.26:26900 - milestone1
+
+129.3.20.26:26901 - milestone2
+
+129.3.20.26:26903 - milestone3
+
+129.3.20.26:26904 - milestone4
+
 ## References
 - [Go Networking Package](https://pkg.go.dev/net)
 - [React Charting Libraries (D3.js)](https://d3js.org/)
