@@ -88,7 +88,7 @@ func handleClient(conn net.Conn) {
 		}
 		
 		decodedBytes := xorEncodeDecode(fullMessage, &key)
-		fmt.Printf("Received Letter: %s \n", string(decodedBytes[:]))
+		fmt.Printf("Received Letter: %s \n", helper.CropString(string(decodedBytes), 20))
 
 
 		// Sending 8-byte acknowledgement back to the client

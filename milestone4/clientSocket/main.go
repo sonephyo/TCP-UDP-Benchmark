@@ -8,24 +8,27 @@ import (
 	"net"
 	"os"
 	"project1/helper"
+	"strconv"
 	"time"
 )
 
 func xorEncodeDecode(text []byte, key *uint64) []byte {
 	encryptedLi := make([]byte, len(text))
+	*key = uint64(1343123213123434)
+
 	for i := 0; i < len(text); i++ {
 		encryptedLi[i] = text[i] ^ byte(*key)
 	}
-
 	*key = helper.XorShift(*key)
 	return encryptedLi
 }
 
-func sendDataToClient(key *uint64, conn net.Conn, bufferSize int) {
-	msg := helper.GenerateRandomString(bufferSize)
-	msgEncoded := xorEncodeDecode([]byte(msg), key)
+func sendDataToClient(key *uint64, conn net.Conn, messageLi []string) {
 
-	conn.Write(msgEncoded)
+	for _, msg := range messageLi {
+		msgEncoded := xorEncodeDecode([]byte(msg), key)
+		conn.Write(msgEncoded)
+	}
 
 	// 8-byte acknowledgement
 	returnDataFromServer := make([]byte, 8)
@@ -35,6 +38,14 @@ func sendDataToClient(key *uint64, conn net.Conn, bufferSize int) {
 		fmt.Println("Acknowledgment recieved: data are equal")
 	}
 
+}
+
+func generate1MBStr(messageCount int, messageSize int) []string {
+	var stringList []string
+	for i := 0; i < messageCount; i++ {
+		stringList = append(stringList, helper.GenerateRandomString(messageSize))
+	}
+	return stringList
 }
 
 func main() {
@@ -55,23 +66,27 @@ func main() {
 	}
 
 	defer conn.Close()
-	bufferSizes := []int{8, 64, 256, 512}
+	messageCounts := []int{1024, 2048, 4096}
+	messageSizes := []int{1024, 512, 256}
+	hashmap := make(map[string][]float64)
 
-	hashmap := make(map[int][]float64)
 	for i := 1; i <= 100; i++ {
 
-		for _, value := range bufferSizes {
+		for i := 0; i < len(messageCounts); i++ {
 			key := uint64(1343123213123434)
+
+			messageLi := generate1MBStr(messageCounts[i], messageSizes[i])
 			start := time.Now()
-			sendDataToClient(&key, conn, value)
+			sendDataToClient(&key, conn, messageLi)
+
 			elapsed := time.Since(start)
-			fmt.Println("Elapsed time:", elapsed, "for the bufferSize of", value)
+			fmt.Println("Elapsed time:", elapsed)
 
-			if _, exists := hashmap[value]; !exists {
-				hashmap[value] = make([]float64, 0)
+			str := strconv.Itoa(messageCounts[i]) + "x" + strconv.Itoa(messageSizes[i])
+			if _, exists := hashmap[str]; !exists {
+				hashmap[str] = make([]float64, 0)
 			}
-			hashmap[value] = append(hashmap[value], elapsed.Seconds())
-
+			hashmap[str] = append(hashmap[str], elapsed.Seconds())
 		}
 	}
 	fmt.Println("--------------------------------------")

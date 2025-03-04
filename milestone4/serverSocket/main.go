@@ -9,8 +9,10 @@ import (
 	"project1/helper"
 	"strconv"
 	"strings"
+	"sync"
 )
 
+var mapLock sync.Mutex
 
 func xorEncodeDecode(text []byte, key *uint64) []byte {
 	encryptedLi := make([]byte, len(text))
@@ -22,17 +24,17 @@ func xorEncodeDecode(text []byte, key *uint64) []byte {
 }
 
 func handleClient(conn *net.UDPConn, clientAddress *net.UDPAddr, data []byte) {
+	mapLock.Lock()
 	key := uint64(1343123213123434)
 	decodedBytes := xorEncodeDecode(data, &key)
 	fmt.Printf("Received Letter: %s \n", helper.CropString(string(decodedBytes[:]), 20))
 	fmt.Println("Size : ", len(decodedBytes))
 
+
 	hash := sha256.Sum256([]byte("Data recieved"))
 	checksum := []byte(hash[:8])
-	_, err := conn.WriteToUDP(checksum, clientAddress)
-	if err != nil {
-		fmt.Println("Error sending acknowledgment: ", err)
-	}
+	conn.WriteToUDP(checksum, clientAddress)
+	mapLock.Unlock()
 }
 
 func main() {

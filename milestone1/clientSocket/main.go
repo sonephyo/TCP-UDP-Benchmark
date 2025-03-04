@@ -5,11 +5,12 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	"net"
 	"os"
-	"time"
 	"project1/helper"
+	"time"
 )
 
 func xorEncodeDecode(text []byte, key *uint64) []byte {
@@ -17,7 +18,7 @@ func xorEncodeDecode(text []byte, key *uint64) []byte {
 	for i := 0; i < len(text); i++ {
 		encryptedLi[i] = text[i] ^ byte(*key)
 	}
-	
+
 	*key = helper.XorShift(*key)
 	return encryptedLi
 }
@@ -35,7 +36,6 @@ func sendDataToClient(msg string, key *uint64, conn net.Conn, bufferSize int) {
 	binary.BigEndian.PutUint32(lengthChuck, uint32(bufferSize))
 	conn.Write(lengthChuck)
 
-
 	for i := 0; i < len(msgEncoded); i += bufferSize {
 		end := i + bufferSize
 		if end > len(msgEncoded) {
@@ -44,7 +44,6 @@ func sendDataToClient(msg string, key *uint64, conn net.Conn, bufferSize int) {
 		chunk := msgEncoded[i:end]
 		conn.Write(chunk)
 	}
-
 
 	// 8-byte acknowledgement
 	returnDataFromServer := make([]byte, 8)
@@ -60,7 +59,6 @@ func sendDataToClient(msg string, key *uint64, conn net.Conn, bufferSize int) {
 
 func main() {
 
-	// Input argument for host address
 	arguments := os.Args[1:]
 	if len(arguments) > 1 {
 		fmt.Println("Error: only one argument accepted which is the server address and port")
@@ -83,14 +81,41 @@ func main() {
 	defer conn.Close()
 	bufferSizes := []int{8, 64, 256, 512}
 
-	for _, longMessage := range LongMessages {
-		fmt.Println("# Sending Message of : ", helper.CropString(longMessage, 20))
-		for _, value := range bufferSizes {
-			start := time.Now()
-			sendDataToClient(longMessage, &key, conn, value)
-			elapsed := time.Since(start)
-			fmt.Println("Elapsed time:", elapsed, "for the bufferSize of", value)
+	hashmap := make(map[string]map[int][]float64)
+
+	for i := 1; i <= 100; i++ {
+		for _, longMessage := range LongMessages {
+			fmt.Println("# Sending Message of : ", helper.CropString(longMessage, 20))
+			for _, value := range bufferSizes {
+				start := time.Now()
+				sendDataToClient(longMessage, &key, conn, value)
+				elapsed := time.Since(start)
+				fmt.Println("Elapsed time:", elapsed, "for the bufferSize of", value)
+				if _, exists := hashmap[longMessage]; !exists {
+					hashmap[longMessage] = make(map[int][]float64)
+				}
+
+				hashmap[longMessage][value] = append(hashmap[longMessage][value], elapsed.Seconds())
+
+			}
+			fmt.Println("--------------------------------------")
+
 		}
-		fmt.Println("--------------------------------------")
+	}
+
+	file, err := os.Create("hashmap_data.json")
+	if err != nil {
+		fmt.Println("Error creating file:", err)
+		return
+	}
+	defer file.Close()
+
+	// Convert the hashmap to JSON
+	encoder := json.NewEncoder(file)
+	encoder.SetIndent("", "  ") // Optional: Pretty-print the JSON output
+	err = encoder.Encode(hashmap)
+	if err != nil {
+		fmt.Println("Error encoding JSON:", err)
+		return
 	}
 }
