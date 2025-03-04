@@ -7,23 +7,17 @@ import (
 	"io"
 	"net"
 	"os"
+	"project1/helper"
+	"strings"
 )
 
-
-// Does xorShift to the input key 
-func xorShift(r uint64) uint64 {
-	r ^= r << 13
-	r ^= r >> 7
-	r ^= r << 17
-	return r
-}
 
 func xorEncodeDecode(text []byte, key *uint64) []byte {
     encryptedLi := make([]byte, len(text))
     for i:=0; i< len(text); i++ {
         encryptedLi[i] = text[i]^byte(*key)
     }
-	*key = xorShift(*key)
+	*key = helper.XorShift(*key)
 
     return encryptedLi
 }
@@ -35,8 +29,8 @@ func handleClient(conn net.Conn) {
 
 	for {
 		
-		lengthBuffer := make([]byte, 4)
-		_, err := io.ReadFull(conn, lengthBuffer)
+		msgLength := make([]byte, 4)
+		_, err := io.ReadFull(conn, msgLength)
 		if err != nil {
 			if err == io.EOF {
 				fmt.Println("Client closed Connection")
@@ -46,14 +40,14 @@ func handleClient(conn net.Conn) {
 			return 
 		}
 
-		messageLength := binary.BigEndian.Uint32(lengthBuffer)
+		messageLength := binary.BigEndian.Uint32(msgLength)
 		if messageLength == 0 {
 			fmt.Println("Empty message/ Invalid")
 			return
 		}
 
-		lengthChuck := make([]byte, 4)
-		_, err = io.ReadFull(conn, lengthChuck)
+		msgCount := make([]byte, 4)
+		_, err = io.ReadFull(conn, msgCount)
 		if err != nil {
 			if err == io.EOF {
 				fmt.Println("Client closed Connection")
@@ -63,46 +57,38 @@ func handleClient(conn net.Conn) {
 			return 
 		}
 
-		chuckLength := binary.BigEndian.Uint32(lengthChuck)
-		if chuckLength == 0 {
+		messageCount := binary.BigEndian.Uint32(msgCount)
+		if messageCount == 0 {
 			fmt.Println("Invalid chuckSize")
 			return
 		}
 
-		var fullMessage []byte
+		var fullMessages []string
 		fmt.Println("Message Length: ", messageLength)
-		fmt.Println("ChuckLength: ", chuckLength)
+		fmt.Println("Message Count: ", messageCount)
 
-		for uint32(len(fullMessage)) < messageLength {
-			remaining := messageLength - uint32(len(fullMessage))
-			
-			currentChunkSize := chuckLength
-			if currentChunkSize > remaining {
-				currentChunkSize = remaining
-			}
-
-			chunk := make([]byte, currentChunkSize)
-			n, err:= conn.Read(chunk)
+		for i := 0; i < int(messageCount); i++ {
+			msgRecieved := make([]byte, messageLength)
+			_, err := io.ReadFull(conn, msgRecieved)
 			if err != nil {
-				if err == io.EOF && uint32(len(fullMessage)) == messageLength {
-					break
+				if err == io.EOF {
+					fmt.Println("EOF reached before reading all messages")
+				} else {
+					fmt.Println("Error reading message:", err)
 				}
-				fmt.Println("Error reading chuck: ", err)
-				break
+				return
 			}
 
-			fullMessage = append(fullMessage, chunk[:n]...)
+			decodedMsg := xorEncodeDecode(msgRecieved, &key)
+
+			fullMessages = append(fullMessages, string(decodedMsg))
 		}
-		
-		decodedBytes := xorEncodeDecode(fullMessage, &key)
-		fmt.Printf("Received Letter: %s \n", string(decodedBytes[:]))
-
-
+	
 		// Sending 8-byte acknowledgement back to the client
-		hash := sha256.Sum256(fullMessage)
+		messageCombined := strings.Join(fullMessages, "")
+		hash := sha256.Sum256([]byte(messageCombined))
 		checksum := []byte(hash[:8])
 		conn.Write(checksum)
-
 	}
 }
 

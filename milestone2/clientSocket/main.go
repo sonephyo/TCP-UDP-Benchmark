@@ -8,59 +8,57 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"project1/helper"
+	"strings"
 	"time"
 )
-
-func xorShift(r uint64) uint64 {
-	r ^= r << 13
-	r ^= r >> 7
-	r ^= r << 17
-	return r
-}
 
 func xorEncodeDecode(text []byte, key *uint64) []byte {
 	encryptedLi := make([]byte, len(text))
 	for i := 0; i < len(text); i++ {
 		encryptedLi[i] = text[i] ^ byte(*key)
 	}
-	*key = xorShift(*key)
+
+	*key = helper.XorShift(*key)
 	return encryptedLi
 }
 
-func sendDataToClient(msg string, key *uint64, conn net.Conn, bufferSize int) {
-	msgEncoded := xorEncodeDecode([]byte(msg), key)
+func sendDataToClient(msgLi []string, key *uint64, conn net.Conn, bufferSize int) {
+
 
 	// Sending message length data
-	lengthBuffer := make([]byte, 4)
-	binary.BigEndian.PutUint32(lengthBuffer, uint32(len(msgEncoded)))
-	conn.Write(lengthBuffer)
+	msgLength := make([]byte, 4)
+	binary.BigEndian.PutUint32(msgLength, uint32(len(msgLi[0])))
+	conn.Write(msgLength)
 
 	// Sending ChuckSize data
-	lengthChuck := make([]byte, 4)
-	binary.BigEndian.PutUint32(lengthChuck, uint32(bufferSize))
-	conn.Write(lengthChuck)
+	msgCount := make([]byte, 4)
+	binary.BigEndian.PutUint32(msgCount, uint32(len(msgLi)))
+	conn.Write(msgCount)
 
-
-	for i := 0; i < len(msgEncoded); i += bufferSize {
-		end := i + bufferSize
-		if end > len(msgEncoded) {
-			end = len(msgEncoded)
-		}
-		chunk := msgEncoded[i:end]
-		conn.Write(chunk)
+	for _, msg := range msgLi {
+		msgEncoded := xorEncodeDecode([]byte(msg), key)
+		conn.Write(msgEncoded)
 	}
-
 
 	// 8-byte acknowledgement
 	returnDataFromServer := make([]byte, 8)
 	conn.Read(returnDataFromServer)
-	hash := sha256.Sum256(msgEncoded)
+	messageCombined := strings.Join(msgLi, "")
+	hash := sha256.Sum256([]byte(messageCombined))
 	if bytes.Equal(hash[:8], returnDataFromServer) {
 		fmt.Println("Acknowledgment recieved: data are equal")
 	} else {
-		fmt.Println("Warning: data recieved are inequal")
+		fmt.Println("Warning: Acknowledgement data recieved are inequal")
 	}
+}
 
+func generate1MBStr(messageCount int, messageSize int) []string {
+	var stringList []string
+    for i := 0; i < messageCount; i++ {
+        stringList = append(stringList, helper.GenerateRandomString(messageSize))
+    }
+	return stringList
 }
 
 func main() {
@@ -78,7 +76,6 @@ func main() {
 	}
 
 	// Creating connection with the server
-	// scanner := bufio.NewScanner(os.Stdin)
 	conn, err := net.Dial("tcp", hostAddress)
 	if err != nil {
 		fmt.Println("Error: ", err)
@@ -87,47 +84,19 @@ func main() {
 	key := uint64(1343123213123434)
 
 	defer conn.Close()
-	bufferSizes := []int{8, 64, 256, 512}
+	messageCounts := []int{1024, 2048, 4096}
+	messageSizes := []int{1024, 512, 256}
 
-	for _, longMessage := range LongMessages {
-		fmt.Println("# Sending Message of : ", cropString(longMessage, 20))
-		for _, value := range bufferSizes {
-			start := time.Now()
-			sendDataToClient(longMessage, &key, conn, value)
-			elapsed := time.Since(start)
-			fmt.Println("Elapsed time:", elapsed, "for the bufferSize of", value)
-		}
-		fmt.Println("--------------------------------------")
+	for i := 0; i < len(messageCounts); i++ {
+		messageLi := generate1MBStr(messageCounts[i], messageSizes[i])
+		fmt.Println("First Data Snippet :", helper.CropString(messageLi[0], 20))
+
+		start := time.Now()
+		sendDataToClient(messageLi, &key, conn, messageSizes[i])	
+
+		elapsed := time.Since(start)
+		fmt.Println("Elapsed time:", elapsed)
 	}
-	
-	// for {
-	// 	fmt.Print("Enter message: ")
-	// 	if !scanner.Scan() {
-	// 		break
-	// 	}
-	// 	msg := scanner.Text()
+	fmt.Println("--------------------------------------")
 
-	// 	if msg == "exit" {
-	// 		break
-	// 	}
-
-	// 	bufferSizes := []int{8, 64, 256, 512}
-
-	// 	for _, value := range bufferSizes {
-	// 		start := time.Now()
-	// 		sendDataToClient(msg, &key, conn, value)
-	// 		elapsed := time.Since(start)
-	// 		fmt.Println("Elapsed time:", elapsed)
-	// 		fmt.Println("----")
-	// 	}
-
-	// }
-}
-
-// Helper Functions
-func cropString(s string, size int) string {
-	if len(s) <= size {
-		return s
-	}
-	return s[:size] + "..."
 }

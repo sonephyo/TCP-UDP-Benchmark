@@ -1,4 +1,4 @@
-module project2/milestone2/clientSocket
+module project2/milestone3/clientSocket
 
 go 1.22.5
 

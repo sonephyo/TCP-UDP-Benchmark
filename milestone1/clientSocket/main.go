@@ -85,7 +85,7 @@ func main() {
 	bufferSizes := []int{8, 64, 256, 512}
 
 	for _, longMessage := range LongMessages {
-		fmt.Println("# Sending Message of : ", cropString(longMessage, 20))
+		fmt.Println("# Sending Message of : ", helper.CropString(longMessage, 20))
 		for _, value := range bufferSizes {
 			start := time.Now()
 			sendDataToClient(longMessage, &key, conn, value)
@@ -117,12 +117,4 @@ func main() {
 	// 	}
 
 	// }
-}
-
-// Helper Functions
-func cropString(s string, size int) string {
-	if len(s) <= size {
-		return s
-	}
-	return s[:size] + "..."
 }
