@@ -73,7 +73,6 @@ func main() {
 	}
 
 	// Creating connection with the server
-	// scanner := bufio.NewScanner(os.Stdin)
 	conn, err := net.Dial("tcp", hostAddress)
 	if err != nil {
 		fmt.Println("Error: ", err)
@@ -94,27 +93,4 @@ func main() {
 		}
 		fmt.Println("--------------------------------------")
 	}
-	
-	// for {
-	// 	fmt.Print("Enter message: ")
-	// 	if !scanner.Scan() {
-	// 		break
-	// 	}
-	// 	msg := scanner.Text()
-
-	// 	if msg == "exit" {
-	// 		break
-	// 	}
-
-	// 	bufferSizes := []int{8, 64, 256, 512}
-
-	// 	for _, value := range bufferSizes {
-	// 		start := time.Now()
-	// 		sendDataToClient(msg, &key, conn, value)
-	// 		elapsed := time.Since(start)
-	// 		fmt.Println("Elapsed time:", elapsed)
-	// 		fmt.Println("----")
-	// 	}
-
-	// }
 }
