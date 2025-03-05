@@ -50,7 +50,7 @@ const App: React.FC = () => {
 
   // Convert each time measurement (in seconds) into throughput (MB/s)
   // Since each test sends 1 MB, throughput = 1 MB / time
-  const throughputData: number[] = times.map((time) => 1 / time);
+  const throughputData: number[] = times.map((time) => 10**6 / time);
 
   // Prepare the chart data for the line chart
   const chartData = {
@@ -72,6 +72,20 @@ const App: React.FC = () => {
     plugins: {
       legend: { position: "top" as const },
       title: { display: true, text: `TCP Throughput Visualization : ${file}` },
+    },
+    scales: {
+      x: {
+        title: {
+          display: true,
+          text: "Transmission Data",
+        },
+      },
+      y: {
+        title: {
+          display: true,
+          text: "ThroughPut (Bytes per second)",
+        },
+      },
     },
   };
 

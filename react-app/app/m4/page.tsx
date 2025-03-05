@@ -73,6 +73,20 @@ const App: React.FC = () => {
       legend: { position: "top" as const },
       title: { display: true, text: `UDP Thoroughput Visualization : ${file}` },
     },
+    scales: {
+      x: {
+        title: {
+          display: true,
+          text: "Transmission Data",
+        },
+      },
+      y: {
+        title: {
+          display: true,
+          text: "ThroughPut (Bytes per second)",
+        },
+      },
+    },
   };
 
   // Handler for changing the selected test key

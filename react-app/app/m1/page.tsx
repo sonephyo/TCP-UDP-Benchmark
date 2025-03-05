@@ -1,8 +1,8 @@
 // App.tsx
 "use client";
-import React, { useState, useEffect, ChangeEvent } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { Line } from 'react-chartjs-2';
+import React, { useState, useEffect, ChangeEvent } from "react";
+import { useSearchParams } from "next/navigation";
+import { Line } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -12,10 +12,18 @@ import {
   Title,
   Tooltip,
   Legend,
-} from 'chart.js';
+} from "chart.js";
 
 // Register Chart.js components
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 // Define a TypeScript interface for the JSON data structure
 interface LatencyData {
@@ -31,14 +39,14 @@ const App: React.FC = () => {
   // Load JSON data based on the query parameter
   let jsonData;
   if (file === "localToGee") {
-    jsonData = require('./[data]/m1/localToGee.json');
+    jsonData = require("../[data]/m1/localToGee.json");
   } else if (file === "localToPi") {
-    jsonData = require('./[data]/m1/localToPi.json');
+    jsonData = require("../[data]/m1/localToPi.json");
   } else if (file === "GeeToPi") {
-    jsonData = require('./[data]/m1/GeeToPi.json');
+    jsonData = require("../[data]/m1/GeeToPi.json");
   } else {
     // Default to localToGee if no file parameter is provided
-    jsonData = require('./[data]/m1/localToGee.json');
+    jsonData = require("../[data]/m1/localToGee.json");
   }
 
   const data: LatencyData = jsonData;
@@ -49,7 +57,9 @@ const App: React.FC = () => {
   // Extract the inner keys for the selected outer key
   const innerData = data[selectedMainKey];
   const innerKeys: string[] = Object.keys(innerData);
-  const [selectedInnerKey, setSelectedInnerKey] = useState<string>(innerKeys[0]);
+  const [selectedInnerKey, setSelectedInnerKey] = useState<string>(
+    innerKeys[0]
+  );
 
   // Update the inner key whenever the outer key changes
   useEffect(() => {
@@ -65,11 +75,11 @@ const App: React.FC = () => {
     labels: latencies.map((_, index) => `Transmission ${index + 1}`),
     datasets: [
       {
-        label: `Latency for "${selectedMainKey}" (Size: ${selectedInnerKey}) in ${file}`,
+        label: `Latency for (Size: ${selectedInnerKey})`,
         data: latencies,
         fill: false,
-        borderColor: 'rgba(75,192,192,1)',
-        backgroundColor: 'rgba(75,192,192,0.4)',
+        borderColor: "rgba(75,192,192,1)",
+        backgroundColor: "rgba(75,192,192,0.4)",
       },
     ],
   };
@@ -78,8 +88,22 @@ const App: React.FC = () => {
   const chartOptions = {
     responsive: true,
     plugins: {
-      legend: { position: 'top' as const },
-      title: { display: true, text: `TCP Latency Visualization: ${file}` },
+      legend: { position: "top" as const },
+      title: { display: true, text: `TCP Round Time Trip (RTT) Visualization` },
+    },
+    scales: {
+      x: {
+        title: {
+          display: true,
+          text: "Transmission Data",
+        },
+      },
+      y: {
+        title: {
+          display: true,
+          text: "RTT (miliseconds)",
+        },
+      },
     },
   };
 
@@ -93,21 +117,21 @@ const App: React.FC = () => {
   };
 
   return (
-    <div style={{ width: '80%', margin: '50px auto' }}>
-      <h1>TCP Latency Graph: {file}</h1>
-      <div style={{ marginBottom: '20px' }}>
+    <div style={{ width: "80%", margin: "50px auto" }}>
+      <h1>TCP Round Time Trip (RTT) Graph</h1>
+      <div style={{ marginBottom: "20px" }}>
         <label>
           Select Outer Key:&nbsp;
           <select value={selectedMainKey} onChange={handleMainKeyChange}>
             {mainKeys.map((key) => (
               <option key={key} value={key}>
-                {key.length > 30 ? key.substring(0, 30) + '...' : key}
+                {key.length > 30 ? key.substring(0, 30) + "..." : key}
               </option>
             ))}
           </select>
         </label>
       </div>
-      <div style={{ marginBottom: '20px' }}>
+      <div style={{ marginBottom: "20px" }}>
         <label>
           Select Data Key:&nbsp;
           <select value={selectedInnerKey} onChange={handleInnerKeyChange}>
